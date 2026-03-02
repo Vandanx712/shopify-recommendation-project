@@ -6,7 +6,7 @@ dotenv.config();
 
 const port = process.env.PORT;
 
-const app = express(cors());
+const app = express(cors({origin:process.env.URL}));
 
 app.use(express.json());
 
