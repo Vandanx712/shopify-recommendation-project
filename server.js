@@ -1,12 +1,18 @@
 import express from "express";
 import dotenv from "dotenv";
-import cors from 'cors'
+import cors from "cors";
 
 dotenv.config();
 
+const app = express();
 const port = process.env.PORT;
 
-const app = express(cors({origin:process.env.URL,credentials:true}));
+app.use(
+  cors({
+    origin: process.env.URL || true, // frontend URL
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 
