@@ -3,7 +3,7 @@ import sessionModel from "../models/session.model.js";
 
 export const createEvent = async (req, res) => {
   try {
-    const { userId, sessionId, eventType, page, product, checkout, order } =
+    const { userId, shopifyStoreID, sessionId, eventType, page, product, checkout, order } =
       req.body;
 
     const session = await sessionModel.findById(sessionId)
@@ -11,6 +11,7 @@ export const createEvent = async (req, res) => {
     await eventsModel.create({
       userId: userId,
       sessionId: sessionId,
+      shopifyStoreID:shopifyStoreID,
       eventType: eventType,
       page: page,
       product: product ?? {},

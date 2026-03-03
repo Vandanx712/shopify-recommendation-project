@@ -6,6 +6,7 @@ export const createOrder = async (req, res) => {
     const {
       userId,
       orderId,
+      shopifyStoreID,
       totalValue,
       currency,
       tax,
@@ -20,6 +21,7 @@ export const createOrder = async (req, res) => {
     await orderModel.create({
       userId: userId,
       orderId: orderId,
+      shopifyStoreID:shopifyStoreID,
       totalValue: totalValue,
       currency: currency,
       tax: tax,

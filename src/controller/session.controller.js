@@ -3,12 +3,13 @@ import userModel from "../models/user.model.js";
 
 export const createSession = async (req, res) => {
   try {
-    const { userId, landingPage } = req.body;
+    const { userId,shopifyStoreID, landingPage } = req.body;
 
     const user = await userModel.findById(userId);
 
     const newsession = await sessionModel.create({
       userId: userId,
+      shopifyStoreID:shopifyStoreID,
       landingPage,
     });
 

@@ -2,7 +2,7 @@ import userModel from "../models/user.model.js";
 
 export const createUser = async (req, res) => {
   try {
-    const { shopifyCustomerId, anonymousId, email, deviceInfo } = req.body;
+    const { shopifyCustomerId,shopifyStoreID, anonymousId, email, deviceInfo } = req.body;
 
     const exictedUser = await userModel
       .findOne({ $or: [{ email: email }, { anonymousId: anonymousId }] })
@@ -17,6 +17,7 @@ export const createUser = async (req, res) => {
 
     const newuser = await userModel.create({
       shopifyCustomerId: shopifyCustomerId ?? "",
+      shopifyStoreID:shopifyStoreID,
       email: email ?? "",
       anonymousId: anonymousId,
       deviceInfo: deviceInfo,
