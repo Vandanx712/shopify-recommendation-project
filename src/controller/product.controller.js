@@ -13,23 +13,28 @@ export const getAllProducts = async (req, res) => {
       `https://${shopId}/collections/all/products.json`,
     );
 
-    for (const product of products.data.products) {
-      await productModel.findOneAndUpdate(
-        { shopifyStoreID: shopId },
-        {
-          shopifyStoreID: shopId,
-          id: product.id,
-          title: product.title,
-          handle: product.handle,
-          vendor: product.vendor,
-          product_type: product.product_type,
-          tags: product.tags,
-          options: product.options,
-          variants: product.variants,
+    const allproducts = products.data.products;
+    const operations = allproducts.map((product) => ({
+      updateOne: {
+        filter: { shopifyStoreID: shopId, id: product.id },
+        update: {
+          $set: {
+            shopifyStoreID: shopId,
+            id: product.id,
+            title: product.title,
+            handle: product.handle,
+            vendor: product.vendor,
+            product_type: product.product_type,
+            tags: product.tags,
+            options: product.options,
+            variants: product.variants,
+          },
         },
-        { new: true, upsert: true, runValidators: true },
-      );
-    }
+        upsert: true,
+      },
+    }));
+
+    await productModel.bulkWrite(operations);
 
     return res.status(200).json({ success: true });
   } catch (error) {
