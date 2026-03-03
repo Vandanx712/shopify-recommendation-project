@@ -8,7 +8,7 @@ import { createOrder } from '../controller/order.controller.js'
 
 const indexRouter = Router()
 
-indexRouter.route('/get').get(getAllProducts)
+indexRouter.route('/get').post(getAllProducts)
 indexRouter.route('/user/').post(createUser)
 indexRouter.route('/session/').post(createSession)
 indexRouter.route('/event/').post(createEvent)
