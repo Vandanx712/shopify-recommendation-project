@@ -3,15 +3,23 @@ import sessionModel from "../models/session.model.js";
 
 export const createEvent = async (req, res) => {
   try {
-    const { userId, shopifyStoreID, sessionId, eventType, page, product, checkout, order } =
-      req.body;
+    const {
+      userId,
+      shopifyStoreID,
+      sessionId,
+      eventType,
+      page,
+      product,
+      checkout,
+      order,
+    } = req.body;
 
-    const session = await sessionModel.findById(sessionId)
+    const session = await sessionModel.findById(sessionId);
 
     await eventsModel.create({
       userId: userId,
       sessionId: sessionId,
-      shopifyStoreID:shopifyStoreID,
+      shopifyStoreID: shopifyStoreID,
       eventType: eventType,
       page: page,
       product: product ?? {},
@@ -48,4 +56,22 @@ export const createEvent = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
+};
+
+export const deleteEvent = async (req, res) => {
+  const { userId, sessionId, productId } = req.body;
+
+  await eventsModel.deleteOne({
+    userId: userId,
+    sessionId: sessionId,
+    "product.productId": productId,
+  });
+
+  const session = await sessionModel.findOne({
+    userId: userId,
+    _id: sessionId,
+  });
+  session.addedToCartCount -= 1;
+  await session.save();
+  return res.status(200);
 };
