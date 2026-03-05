@@ -9,11 +9,24 @@ export const getAllProducts = async (req, res) => {
         success: false,
         message: "Missing field",
       });
-    const products = await axios.get(
-      `https://${shopId}/collections/all/products.json`,
-    );
 
-    const allproducts = products.data.products;
+    let page = 1;
+    const allproducts = [];
+
+    while (true) {
+      const response = await axios.get(
+        `https://${shopId}/products.json?limit=250&page=${page}`,
+      );
+
+      const products = response.data.products;
+
+      if (!products || products.length === 0) break;
+
+      allproducts.push(...products);
+
+      page++;
+    }
+
     const operations = allproducts.map((product) => ({
       updateOne: {
         filter: { shopifyStoreID: shopId, id: product.id },
@@ -35,6 +48,28 @@ export const getAllProducts = async (req, res) => {
     }));
 
     await productModel.bulkWrite(operations);
+
+    const flaskFormat = {
+      store_id: shopId,
+      products: [],
+    };
+
+    allproducts.forEach((product) => {
+      flaskFormat.products.push({
+        id: product.id.toString(),
+        store_id: shopId,
+        title: product.title,
+        product_type: product.product_type,
+        vendor: product.vendor,
+        tags: product.tags,
+        options: product.options.map((opt) => {
+          return { name: opt.name, values: opt.values };
+        }),
+        price: Number(product.variants[0].price),
+      });
+    });
+
+    await axios.post(`${process.env.FLASK_URL}/v1/sync/bulk`, flaskFormat);
 
     return res.status(200).json({ success: true });
   } catch (error) {
