@@ -15,7 +15,7 @@ indexRouter.route("/user/").post(createUser);
 indexRouter.route("/session/").post(createSession);
 indexRouter.route("/updatesession").put(updateSession);
 indexRouter.route("/event/").post(createEvent);
-indexRouter.route("/deleteEvent").delete(deleteEvent);
+indexRouter.route("/deleteEvent").post(deleteEvent);
 indexRouter.route("/order/").post(createOrder);
 
 export default indexRouter;
