@@ -594,4 +594,4 @@ ProductSchema.statics.findInPriceRange = function(min, max, conditions = {}) {
 // Export the enhanced functions
 export { createDynamicIndex, queryPatternTracker };
 
-export const Product =  mongoose.model("Product", ProductSchema, "products");
+export const Product =  mongoose.model("fProduct", ProductSchema);

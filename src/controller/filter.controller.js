@@ -1,4 +1,4 @@
-import Product from '../models/fproduct.model.js';
+import {Product} from '../models/fproduct.model.js';
 import { queryPatternTracker } from '../models/fproduct.model.js';
 // import AdvancedCache from '../utils/AdvancedCache.js';
 import { buildSharedQuery } from './product.controller.js';
