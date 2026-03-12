@@ -7,6 +7,7 @@ import {
 } from "../controller/session.controller.js";
 import { createEvent, deleteEvent } from "../controller/event.controller.js";
 import { createOrder } from "../controller/order.controller.js";
+import { getProductFilters } from "../controller/filter.controller.js";
 
 const indexRouter = Router();
 
@@ -22,5 +23,6 @@ indexRouter.route('/similarproducts').post(similarProducts)
 indexRouter.route('/searchproducts').post(searchProducts)
 
 indexRouter.route('/products').get(getProducts)
+indexRouter.route('/products/filters').get(getProductFilters)
 
 export default indexRouter;
