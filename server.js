@@ -11,13 +11,13 @@ const port = process.env.PORT;
 
 app.use(
   cors({
-    origin: [process.env.URL || 'http://localhost:3000' || true], // frontend URL
+    origin: [process.env.URL,"http://localhost:3000",true], // frontend URL
     credentials: true,
   }),
 );
 
 app.use(express.json());
-app.use('/api',indexRouter)
+app.use("/api", indexRouter);
 
 await connectDb();
 
