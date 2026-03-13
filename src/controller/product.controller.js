@@ -1,6 +1,7 @@
 import axios from "axios";
 import productModel from "../models/product.model.js";
 import { Product } from "../models/fproduct.model.js";
+import eventsModel from "../models/events.model.js";
 
 export const getAllProducts = async (req, res) => {
   try {
