@@ -368,8 +368,8 @@ export const getProducts = async (req, res) => {
       .find({ userId: id, eventType: "view_product" })
       .select("product")
       .sort({ createdAt: -1 })
+      .limit(9)
       .lean()
-      .slice(0, 9);
 
     const ids = events.map((event) => event.product.productId);
 
