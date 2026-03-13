@@ -15,6 +15,7 @@ const eventSchema = new mongoose.Schema(
       enum: [
         "page_view",
         "view_product",
+        "add_to_wishlist",
         "add_to_cart",
         "checkout_started",
         "checkout_completed",

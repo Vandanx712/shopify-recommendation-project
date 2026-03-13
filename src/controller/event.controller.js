@@ -34,6 +34,9 @@ export const createEvent = async (req, res) => {
       case "view_product":
         session.productsViewed = session.productsViewed + 1;
         break;
+       case "add_to_wishlist":
+        session.addedToWishlistCount = session.addedToWishlistCount + 1;
+        break;
       case "add_to_cart":
         session.addedToCartCount = session.addedToCartCount + 1;
         break;

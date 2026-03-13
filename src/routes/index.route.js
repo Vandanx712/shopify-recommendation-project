@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getAllProducts, getProducts } from "../controller/product.controller.js";
-import { createUser, recommendation, searchProducts, similarProducts } from "../controller/user.controller.js";
+import { createUser, recommendation, searchProducts, similarProducts, viewedProducts } from "../controller/user.controller.js";
 import {
   createSession,
   updateSession,
@@ -21,6 +21,7 @@ indexRouter.route("/order/").post(createOrder);
 indexRouter.route('/getrecommended').post(recommendation)
 indexRouter.route('/similarproducts').post(similarProducts)
 indexRouter.route('/searchproducts').post(searchProducts)
+indexRouter.route('/viewedProducts/:userId').get(viewedProducts)
 
 indexRouter.route('/products').get(getProducts)
 indexRouter.route('/products/filters').get(getProductFilters)
