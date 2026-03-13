@@ -23,7 +23,7 @@ indexRouter.route('/similarproducts').post(similarProducts)
 indexRouter.route('/searchproducts').post(searchProducts)
 indexRouter.route('/viewedProducts/:userId').get(viewedProducts)
 
-indexRouter.route('/products').get(getProducts)
+indexRouter.route('/products/:id').get(getProducts)
 indexRouter.route('/products/filters').get(getProductFilters)
 
 export default indexRouter;
