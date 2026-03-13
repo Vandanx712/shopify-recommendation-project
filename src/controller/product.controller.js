@@ -335,6 +335,7 @@ export const getProducts = async (req, res) => {
       bypassCache = false,
       ...filters
     } = req.query;
+    const { id } = req.params;
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -362,6 +363,12 @@ export const getProducts = async (req, res) => {
     //   console.log("Cache hit for products");
     //   return res.json(cachedResult);
     // }
+    const events = await eventsModel
+      .find({ userId: id, eventType: "view_product" })
+      .select("product")
+      .lean();
+
+    const ids = events.map((event) => event.product.productId);
 
     let response;
 
@@ -416,15 +423,25 @@ export const getProducts = async (req, res) => {
           sortOptions = { createdAt: -1 };
       }
 
-      const [products, total] = await Promise.all([
-        Product.find(query).sort(sortOptions).skip(skip).limit(limitNum).lean(),
-        Product.countDocuments(query),
+      const filter = {
+        ...query,
+        productId: { $nin: ids },
+      };
+
+      const [products, viewedProducts, total] = await Promise.all([
+        Product.find(filter)
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limitNum)
+          .lean(),
+        Product.find({ productId: { $in: ids } }).lean(),
+        Product.countDocuments(filter),
       ]);
 
       response = {
         success: true,
         data: {
-          products,
+          products: [...viewedProducts, ...products].slice(0, limitNum),
           pagination: {
             total,
             page: pageNum,
