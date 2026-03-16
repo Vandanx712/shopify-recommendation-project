@@ -372,9 +372,13 @@ export const getProducts = async (req, res) => {
       .lean();
 
     const ids = events.map((event) => event.product.productId);
-    const viewedProducts = await Product.find({
+    const query = await buildSharedQuery(filters);
+
+    const filter = {
+      ...query,
       productId: { $in: ids },
-    }).lean();
+    };
+    const viewedProducts = await Product.find(filter).lean();
 
     let response;
 
@@ -404,8 +408,7 @@ export const getProducts = async (req, res) => {
         },
       };
     } else {
-      const query = await buildSharedQuery(filters);
-
+      
       const filter = {
         ...query,
         productId: { $nin: ids },
