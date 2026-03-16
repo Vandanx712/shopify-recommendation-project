@@ -369,15 +369,22 @@ export const getProducts = async (req, res) => {
       .select("product")
       .sort({ createdAt: -1 })
       .limit(9)
-      .lean()
+      .lean();
 
     const ids = events.map((event) => event.product.productId);
+    const viewedProducts = await Product.find({
+      productId: { $in: ids },
+    }).lean();
 
     let response;
 
     if (sort === "best_seller") {
+      const filter = {
+        ...filters,
+        productId: { $nin: ids },
+      };
       const { products, total } = await getBestSellingProducts(
-        filters,
+        filter,
         limitNum,
         skip,
       );
@@ -385,7 +392,7 @@ export const getProducts = async (req, res) => {
       response = {
         success: true,
         data: {
-          products,
+          products: [...viewedProducts, ...products].slice(0, limitNum),
           pagination: {
             total,
             page: pageNum,
@@ -398,6 +405,11 @@ export const getProducts = async (req, res) => {
       };
     } else {
       const query = await buildSharedQuery(filters);
+
+      const filter = {
+        ...query,
+        productId: { $nin: ids },
+      };
 
       let sortOptions = {};
       switch (sort) {
@@ -426,18 +438,12 @@ export const getProducts = async (req, res) => {
           sortOptions = { createdAt: -1 };
       }
 
-      const filter = {
-        ...query,
-        productId: { $nin: ids },
-      };
-
-      const [products, viewedProducts, total] = await Promise.all([
+      const [products, total] = await Promise.all([
         Product.find(filter)
           .sort(sortOptions)
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        Product.find({ productId: { $in: ids } }).lean(),
         Product.countDocuments(filter),
       ]);
 
