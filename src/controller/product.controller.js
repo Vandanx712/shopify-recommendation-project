@@ -527,29 +527,33 @@ export const syncProducts = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existUser = await userModel.findById(id);
-    if (existUser) return res.status(200);
+    if (id) {
+      const existUser = await userModel.findById(id);
+      if (existUser) return res.status(200);
+    } else {
+      const allproducts = await Product.find({})
+        .select(
+          "productId,name,brand,description,price,categories,tags,attributes",
+        )
+        .lean();
 
-    const allproducts = await Product.find({})
-      .select(
-        "productId,name,brand,description,price,categories,tags,attributes",
-      )
-      .lean();
-
-    const flaskFormat = [];
-    allproducts.forEach((product) => {
-      flaskFormat.push({
-        productId: product.productId,
-        name: product.name,
-        brand: product.brand,
-        description: product.description,
-        price: Number(product.price),
-        categories: product.categories,
-        tags: product.tags,
-        attributes: product.attributes,
+      const flaskFormat = [];
+      allproducts.forEach((product) => {
+        flaskFormat.push({
+          productId: product.productId,
+          name: product.name,
+          brand: product.brand,
+          description: product.description,
+          price: Number(product.price),
+          categories: product.categories,
+          tags: product.tags,
+          attributes: product.attributes,
+        });
       });
-    });
-    await axios.post(`${process.env.FLASK_URL}/v1/sync/`, flaskFormat);
+      await axios.post(`${process.env.FLASK_URL}/v1/sync/`, flaskFormat);
+
+      return res.status(200)
+    }
   } catch (error) {
     console.log(error);
   }
