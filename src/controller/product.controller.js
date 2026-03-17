@@ -2,6 +2,7 @@ import axios from "axios";
 import productModel from "../models/product.model.js";
 import { Product } from "../models/fproduct.model.js";
 import eventsModel from "../models/events.model.js";
+import userModel from "../models/user.model.js";
 
 export const getAllProducts = async (req, res) => {
   try {
@@ -364,21 +365,59 @@ export const getProducts = async (req, res) => {
     //   console.log("Cache hit for products");
     //   return res.json(cachedResult);
     // }
-    const events = await eventsModel
-      .find({ userId: id, eventType: "view_product" })
-      .select("product")
-      .sort({ createdAt: -1 })
-      .limit(9)
-      .lean();
 
-    const ids = events.map((event) => event.product.productId);
+    // const events = await eventsModel
+    //   .find({ userId: id, eventType: "view_product" })
+    //   .select("product")
+    //   .sort({ createdAt: -1 })
+    //   .limit(9)
+    //   .lean();
+
+    // const ids = events.map((event) => event.product.productId);
     const query = await buildSharedQuery(filters);
 
-    const filter = {
-      ...query,
-      productId: { $in: ids },
-    };
-    const viewedProducts = await Product.find(filter).lean();
+    // const filter = {
+    //   ...query,
+    //   productId: { $in: ids },
+    // };
+    // const viewedProducts = await Product.find(filter).lean();
+
+    const allevents = await eventsModel.find({ userId: id }).lean();
+
+    const wishlist_ids = [];
+    const cart_ids = [];
+    const viewed_ids = [];
+
+    allevents.forEach((event) => {
+      if (event.eventType == "view_product")
+        viewed_ids.push(event.product.productId);
+      else if (event.eventType == "add_to_cart")
+        cart_ids.push(event.product.productId);
+      else if (event.eventType == "add_to_wishlist")
+        wishlist_ids.push(event.product.productId);
+    });
+
+    const resData = await axios.post(`${process.env.FLASK_URL}/v1/recommend/`, {
+      viewed_ids,
+      cart_ids,
+      wishlist_ids,
+      filters: {
+        brand: filters.brand?.split(","),
+        gender: filters.genders?.split(","),
+        fabric: filters.fabric?.split(","),
+        size: filters.size?.split(","),
+        color: filters.color?.split(","),
+        price_range: {
+          min_price: filters.minPrice,
+          max_price: filters.maxPrice,
+        },
+      },
+    });
+
+    const ids = resData.data.recommendations.map(
+      (product) => product.productId,
+    );
+    const recProducts = await Product.find({ productId: { $in: ids } }).lean();
 
     let response;
 
@@ -396,7 +435,8 @@ export const getProducts = async (req, res) => {
       response = {
         success: true,
         data: {
-          products: [...viewedProducts, ...products].slice(0, limitNum),
+          // products: [...viewedProducts, ...products].slice(0, limitNum),
+          products: [...recProducts, ...products].slice(0, limitNum),
           pagination: {
             total,
             page: pageNum,
@@ -408,7 +448,6 @@ export const getProducts = async (req, res) => {
         },
       };
     } else {
-      
       const filter = {
         ...query,
         productId: { $nin: ids },
@@ -453,7 +492,8 @@ export const getProducts = async (req, res) => {
       response = {
         success: true,
         data: {
-          products: [...viewedProducts, ...products].slice(0, limitNum),
+          // products: [...viewedProducts, ...products].slice(0, limitNum),
+          products: [...recProducts, ...products].slice(0, limitNum),
           pagination: {
             total,
             page: pageNum,
@@ -479,5 +519,38 @@ export const getProducts = async (req, res) => {
       error: "Failed to fetch products",
       message: error.message,
     });
+  }
+};
+
+// fast api
+export const syncProducts = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existUser = await userModel.findById(id);
+    if (existUser) return res.status(200);
+
+    const allproducts = await Product.find({})
+      .select(
+        "productId,name,brand,description,price,categories,tags,attributes",
+      )
+      .lean();
+
+    const flaskFormat = [];
+    allproducts.forEach((product) => {
+      flaskFormat.push({
+        productId: product.productId,
+        name: product.name,
+        brand: product.brand,
+        description: product.description,
+        price: Number(product.price),
+        categories: product.categories,
+        tags: product.tags,
+        attributes: product.attributes,
+      });
+    });
+    await axios.post(`${process.env.FLASK_URL}/v1/sync/`, flaskFormat);
+  } catch (error) {
+    console.log(error);
   }
 };
