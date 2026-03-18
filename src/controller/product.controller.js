@@ -397,7 +397,7 @@ export const getProducts = async (req, res) => {
         wishlist_ids.push(event.product.productId);
     });
 
-    const resData = await axios.post(`${process.env.FLASK_URL}/v1/recommend/`, {
+    const resData = await axios.post(`${process.env.FLASK_URL}/recommend/`, {
       viewed_ids,
       cart_ids,
       wishlist_ids,
@@ -550,7 +550,7 @@ export const syncProducts = async (req, res) => {
           attributes: product.attributes,
         });
       });
-      await axios.post(`${process.env.FLASK_URL}/v1/sync/`, flaskFormat);
+      await axios.post(`${process.env.FLASK_URL}/sync/`, flaskFormat);
 
       return res.status(200)
     }
