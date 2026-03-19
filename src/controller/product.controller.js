@@ -401,6 +401,7 @@ export const getProducts = async (req, res) => {
       viewed_ids,
       cart_ids,
       wishlist_ids,
+      limit: 10 ?? null,
       filters: {
         brand: filters.brand?.split(",") ?? null,
         gender: filters.genders?.split(",") ?? null,
@@ -411,7 +412,6 @@ export const getProducts = async (req, res) => {
           min_price: Number(filters.minPrice) ?? null,
           max_price: Number(filters.maxPrice) ?? null,
         },
-        limit: 10 ?? null,
       },
     });
 
