@@ -102,7 +102,7 @@ const createCaseInsensitivePatternsCollentions = (field, values) => {
   }));
 };
 
-const getBestSellingProducts = async (filters, limit, skip) => {
+const getBestSellingProducts = async (filters, productids, limit, skip) => {
   try {
     // Build the product query from filters
     const productQuery = await buildSharedQuery(filters);
@@ -113,7 +113,7 @@ const getBestSellingProducts = async (filters, limit, skip) => {
     // Use aggregation to get products with sales data and apply filters
     const pipeline = [
       // Match products based on filters
-      { $match: productQuery },
+      { $match: { ...productQuery, productId: { $nin: productids } } },
 
       // Lookup orders for each product
       {
@@ -291,18 +291,21 @@ export const buildSharedQuery = async (queryParams) => {
   if (productType) {
     query.productType = { $in: createCaseInsensitivePatterns(productType) };
   }
-  if (brand) {
-    const brandOrConditions = createCaseInsensitivePatternsCollentions(
-      "brand",
-      brand,
-    );
+  // if (brand) {
+  //   const brandOrConditions = createCaseInsensitivePatternsCollentions(
+  //     "brand",
+  //     brand,
+  //   );
 
-    if (brandOrConditions.length) {
-      query.$or = brandOrConditions;
-    }
-    // if (brand) {
-    //   query.brand = { $in: createCaseInsensitivePatterns(brand) };
-    // }
+  //   if (brandOrConditions.length) {
+  //     query.$or = brandOrConditions;
+  //   }
+  //   // if (brand) {
+  //   //   query.brand = { $in: createCaseInsensitivePatterns(brand) };
+  //   // }
+  // }
+  if (brand) {
+    query.brand = { $in: createCaseInsensitivePatterns(brand) };
   }
 
   if (fabric) {
@@ -375,7 +378,6 @@ export const getProducts = async (req, res) => {
 
     // const ids = events.map((event) => event.product.productId);
     const query = await buildSharedQuery(filters);
-
     // const filter = {
     //   ...query,
     //   productId: { $in: ids },
@@ -409,8 +411,8 @@ export const getProducts = async (req, res) => {
         size: filters.size?.split(",") ?? null,
         color: filters.color?.split(",") ?? null,
         price_range: {
-          min_price: Number(filters.minPrice) ?? null,
-          max_price: Number(filters.maxPrice) ?? null,
+          min_price: Number(filters.minPrice ?? 0.0),
+          max_price: Number(filters.maxPrice ?? 10000000.0),
         },
       },
     });
@@ -423,12 +425,9 @@ export const getProducts = async (req, res) => {
     let response;
 
     if (sort === "best_seller") {
-      const filter = {
-        ...filters,
-        productId: { $nin: ids },
-      };
       const { products, total } = await getBestSellingProducts(
-        filter,
+        filters,
+        ids,
         limitNum,
         skip,
       );
