@@ -403,7 +403,7 @@ export const getProducts = async (req, res) => {
       viewed_ids,
       cart_ids,
       wishlist_ids,
-      limit: 10 ?? null,
+      limit: 12 ?? null,
       filters: {
         brand: filters.brand?.split(",") ?? null,
         gender: filters.genders?.split(",") ?? null,
