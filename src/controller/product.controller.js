@@ -402,15 +402,16 @@ export const getProducts = async (req, res) => {
       cart_ids,
       wishlist_ids,
       filters: {
-        brand: filters.brand?.split(","),
-        gender: filters.genders?.split(","),
-        fabric: filters.fabric?.split(","),
-        size: filters.size?.split(","),
-        color: filters.color?.split(","),
+        brand: filters.brand?.split(",") ?? null,
+        gender: filters.genders?.split(",") ?? null,
+        fabric: filters.fabric?.split(",") ?? null,
+        size: filters.size?.split(",") ?? null,
+        color: filters.color?.split(",") ?? null,
         price_range: {
-          min_price: filters.minPrice,
-          max_price: filters.maxPrice,
+          min_price: Number(filters.minPrice) ?? null,
+          max_price: Number(filters.maxPrice) ?? null,
         },
+        limit: 10 ?? null,
       },
     });
 
@@ -445,6 +446,7 @@ export const getProducts = async (req, res) => {
           },
           filters,
           totalAvailableProducts: total,
+          recProductCount: ids.length,
         },
       };
     } else {
@@ -502,6 +504,7 @@ export const getProducts = async (req, res) => {
           },
           filters,
           totalAvailableProducts: total,
+          recProductCount: ids.length,
         },
       };
     }
@@ -552,7 +555,7 @@ export const syncProducts = async (req, res) => {
       });
       await axios.post(`${process.env.FLASK_URL}/sync/`, flaskFormat);
 
-      return res.status(200)
+      return res.status(200);
     }
   } catch (error) {
     console.log(error);
