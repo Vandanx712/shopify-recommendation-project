@@ -387,7 +387,7 @@ export const getProducts = async (req, res) => {
     const allevents = await eventsModel
       .find({ userId: id })
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(40)
       .lean();
 
     const wishlist_ids = [];
@@ -404,9 +404,9 @@ export const getProducts = async (req, res) => {
     });
 
     const resData = await axios.post(`${process.env.FLASK_URL}/recommend/`, {
-      viewed_ids: viewed_ids.slice(0, 15),
-      cart_ids: cart_ids.slice(0, 15),
-      wishlist_ids: wishlist_ids.slice(0, 15),
+      viewed_ids: viewed_ids.slice(0, 10),
+      cart_ids: cart_ids.slice(0, 10),
+      wishlist_ids: wishlist_ids.slice(0, 10),
       limit: 8 ?? null,
       filters: {
         brand: filters.brand?.split(",") ?? null,
@@ -525,6 +525,39 @@ export const getProducts = async (req, res) => {
       error: "Failed to fetch products",
       message: error.message,
     });
+  }
+};
+
+export const getSimilarProducts = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findOne({ productId: id }).lean();
+
+    const resData = await axios.post(`${process.env.FLASK_URL}/similar/`, {
+      productId: product.productId,
+      limit: 5 ?? null,
+      filters: {
+        brand: product.brand ? [product.brand] : [],
+        gender: product.attributes.genders ? [product.attributes.genders] : [],
+        fabric: product.attributes.fabric ? [product.attributes.fabric] : [],
+        size: product.attributes.size ? [product.attributes.size] : [],
+        color: product.attributes.color ? [product.attributes.color] : [],
+        price_range: {
+          min_price: Number(0.0),
+          max_price: Number(product.price ?? 10000000.0),
+        },
+      },
+    });
+
+    const ids = resData.data.recommendations.map(
+      (product) => product.productId,
+    );
+    const recProducts = await Product.find({ productId: { $in: ids } }).lean();
+
+    return res.status(200).json(recProducts);
+  } catch (error) {
+    console.log(error);
   }
 };
 
