@@ -410,7 +410,7 @@ export const getProducts = async (req, res) => {
       limit: 8 ?? null,
       filters: {
         brand: filters.brand?.split(",") ?? null,
-        gender: filters.genders?.split(",") ?? null,
+        gender: filters.gender?.split(",") ?? null,
         fabric: filters.fabric?.split(",") ?? null,
         size: filters.size?.split(",") ?? null,
         color: filters.color?.split(",") ?? null,
