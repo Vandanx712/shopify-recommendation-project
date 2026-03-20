@@ -531,24 +531,48 @@ export const getProducts = async (req, res) => {
 export const getSimilarProducts = async (req, res) => {
   try {
     const { id } = req.params;
+    const { userId } = req.body;
 
     const product = await Product.findOne({ productId: id }).lean();
+    const allevents = await eventsModel
+      .find({ userId: userId })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const resData = await axios.post(`${process.env.FLASK_URL}/similar/`, {
-      productId: product.productId,
-      limit: 5 ?? null,
-      filters: {
-        brand: product.brand ? [product.brand] : [],
-        gender: product.attributes.gender ? [product.attributes.gender] : [],
-        fabric: product.attributes.fabric ? [product.attributes.fabric] : [],
-        size: product.attributes.size ? [product.attributes.size] : [],
-        color: product.attributes.color ? [product.attributes.color] : [],
-        price_range: {
-          min_price: Number(0.0),
-          max_price: Number(product.price ?? 10000000.0),
+    const wishlist_ids = [];
+    const cart_ids = [];
+    const viewed_ids = [];
+
+    allevents.forEach((event) => {
+      if (event.eventType == "view_product")
+        viewed_ids.push(event.product.productId);
+      else if (event.eventType == "add_to_cart")
+        cart_ids.push(event.product.productId);
+      else if (event.eventType == "add_to_wishlist")
+        wishlist_ids.push(event.product.productId);
+    });
+
+    const resData = await axios.post(
+      `${process.env.FLASK_URL}/similar/behavioral`,
+      {
+        productId: product.productId,
+        viewed_ids: viewed_ids,
+        wishlist_ids: wishlist_ids,
+        cart_ids: cart_ids,
+        limit: 5 ?? null,
+        filters: {
+          brand: product.brand ? [product.brand] : [],
+          gender: product.attributes.gender ? [product.attributes.gender] : [],
+          fabric: product.attributes.fabric ? [product.attributes.fabric] : [],
+          size: product.attributes.size ? [product.attributes.size] : [],
+          color: product.attributes.color ? [product.attributes.color] : [],
+          price_range: {
+            min_price: Number(0.0),
+            max_price: Number(product.price ?? 10000000.0),
+          },
         },
       },
-    });
+    );
 
     const ids = resData.data.recommendations.map(
       (product) => product.productId,
