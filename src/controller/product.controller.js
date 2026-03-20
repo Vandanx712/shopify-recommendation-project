@@ -539,7 +539,7 @@ export const getSimilarProducts = async (req, res) => {
       limit: 5 ?? null,
       filters: {
         brand: product.brand ? [product.brand] : [],
-        gender: product.attributes.genders ? [product.attributes.genders] : [],
+        gender: product.attributes.gender ? [product.attributes.gender] : [],
         fabric: product.attributes.fabric ? [product.attributes.fabric] : [],
         size: product.attributes.size ? [product.attributes.size] : [],
         color: product.attributes.color ? [product.attributes.color] : [],
