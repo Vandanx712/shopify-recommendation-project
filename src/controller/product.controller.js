@@ -384,7 +384,11 @@ export const getProducts = async (req, res) => {
     // };
     // const viewedProducts = await Product.find(filter).lean();
 
-    const allevents = await eventsModel.find({ userId: id }).lean();
+    const allevents = await eventsModel
+      .find({ userId: id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
 
     const wishlist_ids = [];
     const cart_ids = [];
@@ -400,9 +404,9 @@ export const getProducts = async (req, res) => {
     });
 
     const resData = await axios.post(`${process.env.FLASK_URL}/recommend/`, {
-      viewed_ids,
-      cart_ids,
-      wishlist_ids,
+      viewed_ids: viewed_ids.slice(0, 15),
+      cart_ids: cart_ids.slice(0, 15),
+      wishlist_ids: wishlist_ids.slice(0, 15),
       limit: 8 ?? null,
       filters: {
         brand: filters.brand?.split(",") ?? null,
