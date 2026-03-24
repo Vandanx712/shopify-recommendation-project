@@ -335,7 +335,7 @@ export const getProducts = async (req, res) => {
     let {
       page = 1,
       limit = 20,
-      sort='',
+      sort = "",
       order = "desc",
       bypassCache = false,
       ...filters
@@ -388,51 +388,82 @@ export const getProducts = async (req, res) => {
     let ids = [];
 
     if (pageNum == 1) {
-      const allevents = await eventsModel
-        .find({ userId: id })
-        .sort({ createdAt: -1 })
-        .limit(40)
-        .lean();
-
-      const wishlist_ids = [];
-      const cart_ids = [];
-      const viewed_ids = [];
-
-      allevents.forEach((event) => {
-        if (event.eventType == "view_product")
-          viewed_ids.push(event.product.productId);
-        else if (event.eventType == "add_to_cart")
-          cart_ids.push(event.product.productId);
-        else if (event.eventType == "add_to_wishlist")
-          wishlist_ids.push(event.product.productId);
-      });
-
-      const resData = await axios.post(`${process.env.FLASK_URL}/recommend/`, {
-        viewed_ids: viewed_ids.slice(0, 10),
-        cart_ids: cart_ids.slice(0, 10),
-        wishlist_ids: wishlist_ids.slice(0, 10),
-        limit: 8 ?? null,
-        filters: {
-          brand: filters.brand?.split(",") ?? null,
-          gender: filters.gender?.split(",") ?? null,
-          fabric: filters.fabric?.split(",") ?? null,
-          size: filters.size?.split(",") ?? null,
-          color: filters.color?.split(",") ?? null,
-          price_range: {
-            min_price: Number(filters.minPrice ?? 0.0),
-            max_price: Number(filters.maxPrice ?? 10000000.0),
+      const allevents = await Event.aggregate([
+        {
+          $match: {
+            eventName: { $in: ["added to cart", "viewed", "wishlist"] },
           },
         },
-      });
+        {
+          $facet: {
+            cart: [
+              { $match: { eventName: "added to cart" } },
+              { $sort: { createdAt: -1 } },
+              { $limit: 10 },
+              { $group: { _id: null, ids: { $push: "$_id" } } },
+            ],
+            viewed: [
+              { $match: { eventName: "viewed" } },
+              { $sort: { createdAt: -1 } },
+              { $limit: 10 },
+              { $group: { _id: null, ids: { $push: "$_id" } } },
+            ],
+            wishlist: [
+              { $match: { eventName: "wishlist" } },
+              { $sort: { createdAt: -1 } },
+              { $limit: 10 },
+              { $group: { _id: null, ids: { $push: "$_id" } } },
+            ],
+          },
+        },
+        {
+          $project: {
+            cart: { $arrayElemAt: ["$cart.ids", 0] },
+            viewed: { $arrayElemAt: ["$viewed.ids", 0] },
+            wishlist: { $arrayElemAt: ["$wishlist.ids", 0] },
+          },
+        },
+      ]);
+      const wishlist_ids = allevents.wishlist;
+      const cart_ids = allevents.cart;
+      const viewed_ids = allevents.viewed;
 
-      ids = resData.data.recommendations.map(
-        (product) => product.productId,
-      );
-      const filter = {
+      const combineIds = [...viewed_ids, ...cart_ids, ...wishlist_ids];
+      const preFilter = {
         ...query,
-        productId: { $in: ids },
+        productId: { $in: combineIds },
       };
-      recProducts = await Product.find(filter).lean();
+      const matchDocuments = await Product.countDocuments(preFilter);
+
+      if (matchDocuments > 0) {
+        const resData = await axios.post(
+          `${process.env.FLASK_URL}/recommend/`,
+          {
+            viewed_ids: viewed_ids,
+            cart_ids: cart_ids,
+            wishlist_ids: wishlist_ids,
+            limit: 8 ?? null,
+            filters: {
+              brand: filters.brand?.split(",") ?? null,
+              gender: filters.gender?.split(",") ?? null,
+              fabric: filters.fabric?.split(",") ?? null,
+              size: filters.size?.split(",") ?? null,
+              color: filters.color?.split(",") ?? null,
+              price_range: {
+                min_price: Number(filters.minPrice ?? 0.0),
+                max_price: Number(filters.maxPrice ?? 10000000.0),
+              },
+            },
+          },
+        );
+
+        ids = resData.data.recommendations.map((product) => product.productId);
+        const filter = {
+          ...query,
+          productId: { $in: ids },
+        };
+        recProducts = await Product.find(filter).lean();
+      }
     }
 
     let response;
