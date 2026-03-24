@@ -370,20 +370,15 @@ export const getProducts = async (req, res) => {
     //   return res.json(cachedResult);
     // }
 
-    // const events = await eventsModel
-    //   .find({ userId: id, eventType: "view_product" })
-    //   .select("product")
-    //   .sort({ createdAt: -1 })
-    //   .limit(9)
-    //   .lean();
+    let viewedIds = [];
 
     // const ids = events.map((event) => event.product.productId);
     const query = await buildSharedQuery(filters);
-    // const filter = {
-    //   ...query,
-    //   productId: { $in: ids },
-    // };
-    // const viewedProducts = await Product.find(filter).lean();
+    const filter = {
+      ...query,
+      productId: { $in: viewedIds },
+    };
+    const viewedProducts = await Product.find(filter).lean();
 
     let recProducts = [];
     let ids = [];
@@ -428,11 +423,11 @@ export const getProducts = async (req, res) => {
           },
         },
       ]);
-      console.log(allevents);
 
       const wishlist_ids = allevents[0].wishlist;
       const cart_ids = allevents[0].cart;
       const viewed_ids = allevents[0].viewed;
+      viewedIds = viewed_ids;
 
       const combineIds = [...viewed_ids, ...cart_ids, ...wishlist_ids];
       const preFilter = {
@@ -469,6 +464,7 @@ export const getProducts = async (req, res) => {
           productId: { $in: ids },
         };
         recProducts = await Product.find(filter).lean();
+        ids = [...new Set([...ids, ...viewed_ids])];
       }
     }
 
@@ -532,19 +528,18 @@ export const getProducts = async (req, res) => {
       }
 
       const [products, total] = await Promise.all([
-        Product.find(filter)
-          .sort(sortOptions)
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Product.countDocuments(filter),
+        Product.find(filter).sort(sortOptions).skip(skip).limit(limitNum).lean(),
+        Product.countDocuments(filter).skip(skip).limit(limitNum),
       ]);
 
       response = {
         success: true,
         data: {
           // products: [...viewedProducts, ...products].slice(0, limitNum),
-          products: [...recProducts, ...products].slice(0, limitNum),
+          products: [...recProducts, ...viewedProducts, ...products].slice(
+            0,
+            limitNum,
+          ),
           pagination: {
             total,
             page: pageNum,
