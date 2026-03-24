@@ -491,7 +491,7 @@ export const getProducts = async (req, res) => {
           sortOptions = { createdAt: -1 };
           break;
         default:
-          sortOptions = { createdAt: -1 };
+          sortOptions = { createdAt: 1 };
       }
 
       const [products, total] = await Promise.all([
