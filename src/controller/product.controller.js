@@ -457,7 +457,7 @@ export const getProducts = async (req, res) => {
       const recids = resData.data.recommendations.map((product) => product.productId);
       const filter = {
         ...query,
-        productId: { $in: ids },
+        productId: { $in: recids },
       };
       recProducts = await Product.find(filter).lean();
       ids = [...new Set([...recids, ...viewed_ids])];
@@ -547,7 +547,7 @@ export const getProducts = async (req, res) => {
           },
           filters,
           totalAvailableProducts: total,
-          recProductCount: recids.length,
+          recProductCount: recProducts.length,
         },
       };
     }
