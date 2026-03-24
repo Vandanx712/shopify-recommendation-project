@@ -335,7 +335,6 @@ export const getProducts = async (req, res) => {
     let {
       page = 1,
       limit = 20,
-      sort = "best_seller",
       order = "desc",
       bypassCache = false,
       ...filters
@@ -384,47 +383,56 @@ export const getProducts = async (req, res) => {
     // };
     // const viewedProducts = await Product.find(filter).lean();
 
-    const allevents = await eventsModel
-      .find({ userId: id })
-      .sort({ createdAt: -1 })
-      .limit(40)
-      .lean();
+    let recProducts = [];
+    let ids = [];
 
-    const wishlist_ids = [];
-    const cart_ids = [];
-    const viewed_ids = [];
+    if (pageNum == 1) {
+      const allevents = await eventsModel
+        .find({ userId: id })
+        .sort({ createdAt: -1 })
+        .limit(40)
+        .lean();
 
-    allevents.forEach((event) => {
-      if (event.eventType == "view_product")
-        viewed_ids.push(event.product.productId);
-      else if (event.eventType == "add_to_cart")
-        cart_ids.push(event.product.productId);
-      else if (event.eventType == "add_to_wishlist")
-        wishlist_ids.push(event.product.productId);
-    });
+      const wishlist_ids = [];
+      const cart_ids = [];
+      const viewed_ids = [];
 
-    const resData = await axios.post(`${process.env.FLASK_URL}/recommend/`, {
-      viewed_ids: viewed_ids.slice(0, 10),
-      cart_ids: cart_ids.slice(0, 10),
-      wishlist_ids: wishlist_ids.slice(0, 10),
-      limit: 8 ?? null,
-      filters: {
-        brand: filters.brand?.split(",") ?? null,
-        gender: filters.gender?.split(",") ?? null,
-        fabric: filters.fabric?.split(",") ?? null,
-        size: filters.size?.split(",") ?? null,
-        color: filters.color?.split(",") ?? null,
-        price_range: {
-          min_price: Number(filters.minPrice ?? 0.0),
-          max_price: Number(filters.maxPrice ?? 10000000.0),
+      allevents.forEach((event) => {
+        if (event.eventType == "view_product")
+          viewed_ids.push(event.product.productId);
+        else if (event.eventType == "add_to_cart")
+          cart_ids.push(event.product.productId);
+        else if (event.eventType == "add_to_wishlist")
+          wishlist_ids.push(event.product.productId);
+      });
+
+      const resData = await axios.post(`${process.env.FLASK_URL}/recommend/`, {
+        viewed_ids: viewed_ids.slice(0, 10),
+        cart_ids: cart_ids.slice(0, 10),
+        wishlist_ids: wishlist_ids.slice(0, 10),
+        limit: 8 ?? null,
+        filters: {
+          brand: filters.brand?.split(",") ?? null,
+          gender: filters.gender?.split(",") ?? null,
+          fabric: filters.fabric?.split(",") ?? null,
+          size: filters.size?.split(",") ?? null,
+          color: filters.color?.split(",") ?? null,
+          price_range: {
+            min_price: Number(filters.minPrice ?? 0.0),
+            max_price: Number(filters.maxPrice ?? 10000000.0),
+          },
         },
-      },
-    });
+      });
 
-    const ids = resData.data.recommendations.map(
-      (product) => product.productId,
-    );
-    const recProducts = await Product.find({ productId: { $in: ids } }).lean();
+      ids = resData.data.recommendations.map(
+        (product) => product.productId,
+      );
+      const filter = {
+        ...query,
+        productId: { $in: ids },
+      };
+      recProducts = await Product.find(filter).lean();
+    }
 
     let response;
 
