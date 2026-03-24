@@ -388,7 +388,7 @@ export const getProducts = async (req, res) => {
     let ids = [];
 
     if (pageNum == 1) {
-      const allevents = await Event.aggregate([
+      const allevents = await eventsModel.aggregate([
         {
           $match: {
             eventName: { $in: ["added to cart", "viewed", "wishlist"] },
