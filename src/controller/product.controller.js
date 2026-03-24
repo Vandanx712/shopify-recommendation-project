@@ -3,6 +3,7 @@ import productModel from "../models/product.model.js";
 import { Product } from "../models/fproduct.model.js";
 import eventsModel from "../models/events.model.js";
 import userModel from "../models/user.model.js";
+import mongoose from "mongoose";
 
 export const getAllProducts = async (req, res) => {
   try {
@@ -391,7 +392,7 @@ export const getProducts = async (req, res) => {
       const allevents = await eventsModel.aggregate([
         {
           $match: {
-            userId: id,
+            userId: new mongoose.Types.ObjectId(id),
             eventType: {
               $in: ["view_product", "add_to_wishlist", "add_to_cart"],
             },
@@ -421,12 +422,13 @@ export const getProducts = async (req, res) => {
         },
         {
           $project: {
-            cart: { $arrayElemAt: ["$cart.ids", 0] },
-            viewed: { $arrayElemAt: ["$viewed.ids", 0] },
-            wishlist: { $arrayElemAt: ["$wishlist.ids", 0] },
+            cart: { $ifNull: [{ $arrayElemAt: ["$cart.ids", 0] }, []] },
+            viewed: { $ifNull: [{ $arrayElemAt: ["$viewed.ids", 0] }, []] },
+            wishlist: { $ifNull: [{ $arrayElemAt: ["$wishlist.ids", 0] }, []] },
           },
         },
       ]);
+      console.log(allevents);
 
       const wishlist_ids = allevents[0].wishlist;
       const cart_ids = allevents[0].cart;
