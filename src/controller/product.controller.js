@@ -383,89 +383,84 @@ export const getProducts = async (req, res) => {
     let recProducts = [];
     let ids = [];
 
-    if (pageNum == 1) {
-      const allevents = await eventsModel.aggregate([
-        {
-          $match: {
-            userId: new mongoose.Types.ObjectId(id),
-            eventType: {
-              $in: ["view_product", "add_to_wishlist", "add_to_cart"],
-            },
+    const allevents = await eventsModel.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(id),
+          eventType: {
+            $in: ["view_product", "add_to_wishlist", "add_to_cart"],
           },
         },
-        {
-          $facet: {
-            cart: [
-              { $match: { eventType: "add_to_cart" } },
-              { $sort: { createdAt: -1 } },
-              { $limit: 10 },
-              { $group: { _id: null, ids: { $push: "$product.productId" } } },
-            ],
-            viewed: [
-              { $match: { eventType: "view_product" } },
-              { $sort: { createdAt: -1 } },
-              { $limit: 10 },
-              { $group: { _id: null, ids: { $push: "$product.productId" } } },
-            ],
-            wishlist: [
-              { $match: { eventType: "add_to_wishlist" } },
-              { $sort: { createdAt: -1 } },
-              { $limit: 10 },
-              { $group: { _id: null, ids: { $push: "$product.productId" } } },
-            ],
-          },
+      },
+      {
+        $facet: {
+          cart: [
+            { $match: { eventType: "add_to_cart" } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 10 },
+            { $group: { _id: null, ids: { $push: "$product.productId" } } },
+          ],
+          viewed: [
+            { $match: { eventType: "view_product" } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 10 },
+            { $group: { _id: null, ids: { $push: "$product.productId" } } },
+          ],
+          wishlist: [
+            { $match: { eventType: "add_to_wishlist" } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 10 },
+            { $group: { _id: null, ids: { $push: "$product.productId" } } },
+          ],
         },
-        {
-          $project: {
-            cart: { $ifNull: [{ $arrayElemAt: ["$cart.ids", 0] }, []] },
-            viewed: { $ifNull: [{ $arrayElemAt: ["$viewed.ids", 0] }, []] },
-            wishlist: { $ifNull: [{ $arrayElemAt: ["$wishlist.ids", 0] }, []] },
-          },
+      },
+      {
+        $project: {
+          cart: { $ifNull: [{ $arrayElemAt: ["$cart.ids", 0] }, []] },
+          viewed: { $ifNull: [{ $arrayElemAt: ["$viewed.ids", 0] }, []] },
+          wishlist: { $ifNull: [{ $arrayElemAt: ["$wishlist.ids", 0] }, []] },
         },
-      ]);
+      },
+    ]);
 
-      const wishlist_ids = allevents[0].wishlist;
-      const cart_ids = allevents[0].cart;
-      const viewed_ids = allevents[0].viewed;
-      viewedIds = viewed_ids;
+    const wishlist_ids = allevents[0].wishlist;
+    const cart_ids = allevents[0].cart;
+    const viewed_ids = allevents[0].viewed;
+    viewedIds = viewed_ids;
 
-      const combineIds = [...viewed_ids, ...cart_ids, ...wishlist_ids];
-      const preFilter = {
+    const combineIds = [...viewed_ids, ...cart_ids, ...wishlist_ids];
+    const preFilter = {
+      ...query,
+      productId: { $in: combineIds },
+    };
+    const matchDocuments = await Product.countDocuments(preFilter);
+
+    if (matchDocuments > 0) {
+      const resData = await axios.post(`${process.env.FLASK_URL}/recommend/`, {
+        viewed_ids: viewed_ids,
+        cart_ids: cart_ids,
+        wishlist_ids: wishlist_ids,
+        limit: 8 ?? null,
+        filters: {
+          brand: filters.brand?.split(",") ?? null,
+          gender: filters.gender?.split(",") ?? null,
+          fabric: filters.fabric?.split(",") ?? null,
+          size: filters.size?.split(",") ?? null,
+          color: filters.color?.split(",") ?? null,
+          price_range: {
+            min_price: Number(filters.minPrice ?? 0.0),
+            max_price: Number(filters.maxPrice ?? 10000000.0),
+          },
+        },
+      });
+
+      ids = resData.data.recommendations.map((product) => product.productId);
+      const filter = {
         ...query,
-        productId: { $in: combineIds },
+        productId: { $in: ids },
       };
-      const matchDocuments = await Product.countDocuments(preFilter);
-
-      if (matchDocuments > 0) {
-        const resData = await axios.post(
-          `${process.env.FLASK_URL}/recommend/`,
-          {
-            viewed_ids: viewed_ids,
-            cart_ids: cart_ids,
-            wishlist_ids: wishlist_ids,
-            limit: 8 ?? null,
-            filters: {
-              brand: filters.brand?.split(",") ?? null,
-              gender: filters.gender?.split(",") ?? null,
-              fabric: filters.fabric?.split(",") ?? null,
-              size: filters.size?.split(",") ?? null,
-              color: filters.color?.split(",") ?? null,
-              price_range: {
-                min_price: Number(filters.minPrice ?? 0.0),
-                max_price: Number(filters.maxPrice ?? 10000000.0),
-              },
-            },
-          },
-        );
-
-        ids = resData.data.recommendations.map((product) => product.productId);
-        const filter = {
-          ...query,
-          productId: { $in: ids },
-        };
-        recProducts = await Product.find(filter).lean();
-        ids = [...new Set([...ids, ...viewed_ids])];
-      }
+      recProducts = await Product.find(filter).lean();
+      ids = [...new Set([...ids, ...viewed_ids])];
     }
 
     let response;
@@ -528,7 +523,11 @@ export const getProducts = async (req, res) => {
       }
 
       const [products, total] = await Promise.all([
-        Product.find(filter).sort(sortOptions).skip(skip).limit(limitNum).lean(),
+        Product.find(filter)
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limitNum)
+          .lean(),
         Product.countDocuments(filter).skip(skip).limit(limitNum),
       ]);
 
