@@ -335,6 +335,7 @@ export const getProducts = async (req, res) => {
     let {
       page = 1,
       limit = 20,
+      sort='',
       order = "desc",
       bypassCache = false,
       ...filters
