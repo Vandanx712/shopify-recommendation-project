@@ -391,6 +391,7 @@ export const getProducts = async (req, res) => {
       const allevents = await eventsModel.aggregate([
         {
           $match: {
+            userId: id,
             eventType: {
               $in: ["view_product", "add_to_wishlist", "add_to_cart"],
             },
