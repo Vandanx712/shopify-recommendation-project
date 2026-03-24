@@ -391,28 +391,30 @@ export const getProducts = async (req, res) => {
       const allevents = await eventsModel.aggregate([
         {
           $match: {
-            eventName: { $in: ["added to cart", "viewed", "wishlist"] },
+            eventType: {
+              $in: ["view_product", "add_to_wishlist", "add_to_cart"],
+            },
           },
         },
         {
           $facet: {
             cart: [
-              { $match: { eventName: "added to cart" } },
+              { $match: { eventType: "add_to_cart" } },
               { $sort: { createdAt: -1 } },
               { $limit: 10 },
-              { $group: { _id: null, ids: { $push: "$_id" } } },
+              { $group: { _id: null, ids: { $push: "$product.productId" } } },
             ],
             viewed: [
-              { $match: { eventName: "viewed" } },
+              { $match: { eventType: "view_product" } },
               { $sort: { createdAt: -1 } },
               { $limit: 10 },
-              { $group: { _id: null, ids: { $push: "$_id" } } },
+              { $group: { _id: null, ids: { $push: "$product.productId" } } },
             ],
             wishlist: [
-              { $match: { eventName: "wishlist" } },
+              { $match: { eventType: "add_to_wishlist" } },
               { $sort: { createdAt: -1 } },
               { $limit: 10 },
-              { $group: { _id: null, ids: { $push: "$_id" } } },
+              { $group: { _id: null, ids: { $push: "$product.productId" } } },
             ],
           },
         },
@@ -424,15 +426,17 @@ export const getProducts = async (req, res) => {
           },
         },
       ]);
-      const wishlist_ids = allevents.wishlist;
-      const cart_ids = allevents.cart;
-      const viewed_ids = allevents.viewed;
+
+      const wishlist_ids = allevents[0].wishlist;
+      const cart_ids = allevents[0].cart;
+      const viewed_ids = allevents[0].viewed;
 
       const combineIds = [...viewed_ids, ...cart_ids, ...wishlist_ids];
       const preFilter = {
         ...query,
         productId: { $in: combineIds },
       };
+      console.log(preFilter);
       const matchDocuments = await Product.countDocuments(preFilter);
 
       if (matchDocuments > 0) {
@@ -463,6 +467,7 @@ export const getProducts = async (req, res) => {
           productId: { $in: ids },
         };
         recProducts = await Product.find(filter).lean();
+        console.log(recProducts);
       }
     }
 
