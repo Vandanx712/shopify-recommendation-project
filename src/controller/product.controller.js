@@ -436,7 +436,6 @@ export const getProducts = async (req, res) => {
         ...query,
         productId: { $in: combineIds },
       };
-      console.log(preFilter);
       const matchDocuments = await Product.countDocuments(preFilter);
 
       if (matchDocuments > 0) {
@@ -467,7 +466,6 @@ export const getProducts = async (req, res) => {
           productId: { $in: ids },
         };
         recProducts = await Product.find(filter).lean();
-        console.log(recProducts);
       }
     }
 
